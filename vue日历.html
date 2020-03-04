@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>日历</title>
+    <style>
+        .calendar {
+            width: 80%;
+            border-top: 1px solid #e7e7e7;
+            border-left: 1px solid #e7e7e7;
+        }
+
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 10px 0 20px;
+            border-right: 1px solid #e7e7e7;
+        }
+
+        .week {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-right: 1px solid #e7e7e7;
+        }
+
+        .week-item {
+            font-weight: bolder;
+        }
+
+        .box {
+            width: 14%;
+            text-align: center;
+        }
+
+        .date-content {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            /* align-items: center; */
+        }
+
+        .date-row {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .date-row:last-child {
+            border-bottom: 1px solid #e7e7e7;
+        }
+
+        .date-item {
+            width: 14%;
+            padding: 10px;
+            text-align: center;
+            border-top: 1px solid #e7e7e7;
+            border-right: 1px solid #e7e7e7;
+        }
+
+        .date-item:hover {
+            background-color: #e4f7ffde;
+            color: #1ba5db;
+        }
+
+        .click-title {
+            border-right: 1px solid #e7e7e7;
+            border-bottom: 1px solid #e7e7e7;
+        }
+
+        .cur_day {
+            background-color: #0e9fddde;
+            color: #ffffff;
+        }
+        .checkin{
+            background-color: tomato;
+            color:#ffffff;
+        }
+        .no-isMonth{
+            background-color: #f5f5f5de;
+            color: #c7c5c5;
+        }
+    </style>
+</head>
+
+<body>
+    <script type="text/x-template" id="calendar">
+        <div class="calendar">
+
+                <div class="header">
+                    <div class="month-sub btn" @click="prevMonth"><</div>
+                    <div class="currentDate">{{year}}年{{month}}月</div>
+                    <div class="month-add btn" @click="nextMonth">></div>
+                </div>
+
+                <div class="week">
+                    <div class="week-item box" >日</div>
+                    <div class="week-item box" >一</div>
+                    <div class="week-item box" >二</div>
+                    <div class="week-item box" >三</div>
+                    <div class="week-item box" >四</div>
+                    <div class="week-item box" >五</div>
+                    <div class="week-item box" >六</div>
+                </div>
+
+                <div class="content">
+                    <template v-for="item in dateArr">                        
+                        <div class="date-row" v-if="contains(item)">
+                            <div v-for="data in item"
+                            :class="[currentDay.date==data.date?'cur_day':'',
+                            data.isNowMonth?'':'no-isMonth',
+                            isCheck(data.date)?'checkin':'',
+                            'date-item','box']" 
+                            @click='onDateClikc(data)'>
+                                {{data.number}}</div>
+                        </div>
+                    </template>
+                </div>    
+                <div class="click-title">当前选择：{{formatDate}}</div>
+            </div>               
+    </script>
+    <div id="app">
+        <calendar></calendar>
+    </div>
+    <script src="https://cdn.bootcss.com/vue/2.6.11/vue.min.js"></script>
+    <script>
+        Vue.component("calendar", {
+            template: "#calendar",
+            data() {
+                return {
+                    today: new Date('2020/4/1'),
+                    year: '',
+                    month: '',
+                    day: '',
+                    date: '',
+                    dateArr: [],
+                    checkin: ['2020/4/20', '2020/4/21'], //签到队列,
+                    currentDay: {
+                        isNowMonth: true,
+                        date: ''
+                    } //当前点击的日期
+                };
+            },
+            created() {
+                this.year = this.today.getFullYear();
+                this.month = this.today.getMonth() + 1;
+                this.day = this.today.getDay();
+                this.date = this.today.getDate();
+                this.currentDay.date = this.getNowDate();
+                this.getCalendar();
+            },
+            computed: {
+                //返回当前点击年月日
+                formatDate() {
+                    if (this.currentDay.date) {
+                        let arr = this.currentDay.date.match(/\d+/g)
+                        return arr[0] + '年' + arr[1] + '月' + arr[2] + '日'
+                    }
+                    return ''
+                },
+            },
+            methods: {
+                //判断是否为闰年
+                isLeap() {
+                    const year = this.year;
+                    if (year % 4 == 0 && year % 100 > 0) {
+                        return true;
+                    } else if (year % 400 == 0 && year % 3200 > 0) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                },
+                //返回当前月有多少天
+                getLen(month) {
+                    if (month == 2) {
+                        if (this.isLeap) {
+                            return 29;
+                        } else {
+                            return 28;
+                        }
+                    } else {
+                        if (month < 8) {
+                            if (month % 2 > 0) {
+                                return 31;
+                            } else {
+                                return 30;
+                            }
+                        } else {
+                            if (month % 2 > 0) {
+                                return 30;
+                            } else {
+                                return 31;
+                            }
+                        }
+                    }
+                },
+                getNowDate() {
+                    return this.year + '/' + this.month + '/' + this.date;
+                },
+                getCalendar() {
+                    var len = this.getLen(this.month);
+                    // 当月的第一天
+                    var d = new Date(this.year, this.month - 1, 1);
+                    //月第一天星期几 0,1,2,3,4,5,6
+                    var dfw = d.getDay(); //0
+                    var arr = [];
+                    var tem = 0;
+                    let lastM = this.getLen(this.month - 1);
+                    let nextM = 1;
+                    for (var i = 0; i < 6; i++) {
+                        arr[i] = [];
+                        for (var j = 0; j < 7; j++) {
+                            tem++;
+                            //是否为本月
+                            if (tem - dfw > 0 && tem - dfw <= len) {
+                                arr[i][j] = {
+                                    isNowMonth: true,
+                                    date: this.year + '/' + this.month + '/' + (tem - dfw),
+                                    number: tem - dfw
+                                };
+                            } else {
+                                if (tem - dfw <= 0) {
+                                    arr[i][j] = {
+                                        isNowMonth: false,
+                                        date: this.year + '/' + (this.month - 1) + '/' + (lastM - dfw + 1),
+                                        number: lastM - dfw + 1
+                                    };
+                                    lastM++;
+                                } else if (tem - dfw > len) {
+                                    arr[i][j] = {
+                                        isNowMonth: false,
+                                        date: this.year + '/' + (this.month + 1) + '/' + nextM,
+                                        number: nextM
+                                    };
+                                    nextM++;
+                                } else {
+                                    arr[i][j] = "";
+                                }
+                            }
+                        }
+                    }
+                    console.log(arr);
+                    this.dateArr = arr;
+                },
+
+                nextMonth() {
+                    if (this.month == 12) {
+                        this.year++;
+                        this.month = 1;
+                    } else {
+                        this.month++;
+                    };
+                    this.getCalendar();
+                },
+                prevMonth() {
+                    if (this.month == 1) {
+                        this.year--;
+                        this.month = 12;
+                    } else {
+                        this.month--;
+                    }
+                    this.getCalendar();
+                },
+                //判断当前行是否全是本月
+                contains(arr) {
+                    return arr.some(item => item.isNowMonth)
+                },
+                // 是否再签到队列里
+                isCheck(date) {
+                    return this.checkin.includes(date);
+                },
+                onDateClikc(data) {
+                    this.currentDay = data;
+                },
+
+            }
+        })
+        let vm = new Vue({
+            el: '#app',
+        })
+    </script>
+</body>
+
+</html>
